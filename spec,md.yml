@@ -1,0 +1,17 @@
+# Summary 
+xbt is an extended dbt wrapper tool that allows additional commands to be executed before and after dbt is executed.
+
+- xbt should passthrough any command line arguments that are not for xbt.
+- when xbt is executed with no arguments, it should execute dbt with no arguments.
+- when xbt is executed with --version dbt --version should be executed and the output should be printed to the console.
+- if a dbt command is executed with xbt, the dbt command should be executed with the same arguments and the output should be printed to the console.
+
+## implementation
+- xbt should be implemented in python and should use the subprocess module to execute dbt commands.
+- pytest should be used for testing and pluggy should be used for extensibility.
+
+## extensibility
+xbt should be designed in a way that allows for easy extensibility. This means that it should be easy to add new commands and functionality to xbt without having to modify the core codebase. 
+pluggy should be used to allow for easy extensibility.
+
+A plugin should be able to run a command before and after dbt is executed. The details of the dbt project being executed should be passed to the plugin so that it can make informed decisions about what to do.
