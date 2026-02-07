@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from xbt.hooks import DbtContext
 from xbt.main import (
     get_project_dir,
     get_target_dir,
@@ -347,7 +348,7 @@ class TestMain:
 
     @patch("xbt.main.run_dbt")
     def test_main_version_flag(self, mock_run_dbt, tmp_path, monkeypatch, capsys):
-        """Test that --version runs dbt --version and lists plugins."""
+        """Test that --version runs dbt --version and lists plugins with versions."""
         mock_result = Mock()
         mock_result.returncode = 0
         mock_run_dbt.return_value = mock_result
@@ -357,11 +358,12 @@ class TestMain:
 
         main()
 
-        # Should print xbt version, plugins, and call dbt --version
+        # Should print xbt version, plugins with versions, and call dbt --version
         captured = capsys.readouterr()
         assert "0.1.0" in captured.out  # xbt version
         assert "xbt-plugins:" in captured.out  # xbt-plugins section
         assert "example_builtin" in captured.out  # built-in plugin
+        assert "0.1.0" in captured.out  # plugin version
         mock_run_dbt.assert_called_once_with(["--version"])
 
     @patch("xbt.main.run_dbt")
@@ -416,7 +418,8 @@ class TestMain:
         # Check that before_dbt was called with correct context
         call_args = mock_manager.hook.before_dbt.call_args
         context = call_args.kwargs["context"]
-        assert context["project_name"] == "test_project"
+        assert isinstance(context, DbtContext)
+        assert context.project_name == "test_project"
 
     @patch("xbt.main.run_dbt")
     @patch("xbt.main.create_plugin_manager")

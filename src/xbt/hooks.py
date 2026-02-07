@@ -4,27 +4,46 @@ import subprocess
 from typing import Optional
 
 import pluggy
+from pydantic import BaseModel, Field
 
 hookspec = pluggy.HookspecMarker("xbt")
 hookimpl = pluggy.HookimplMarker("xbt")
+
+
+class DbtContext(BaseModel):
+    """Context information passed to xbt plugin hooks."""
+
+    original_args: list[str] = Field(description="Original dbt command arguments")
+    project_dir: str = Field(description="Directory containing dbt_project.yaml")
+    project_name: Optional[str] = Field(
+        default=None,
+        description="Project name from dbt_project.yaml",
+    )
+    target_dir: Optional[str] = Field(
+        default=None,
+        description="dbt target directory (--target-dir or default)",
+    )
+    cwd: str = Field(description="Current working directory")
 
 
 class XbtHookSpecs:
     """Hook specifications for xbt plugins."""
 
     @hookspec
-    def before_dbt(self, command_args: list[str], context: dict) -> Optional[list[str]]:
+    def before_dbt(
+        self, command_args: list[str], context: DbtContext
+    ) -> Optional[list[str]]:
         """
         Hook called before dbt is executed.
 
         Args:
             command_args: The dbt command arguments passed to xbt.
-            context: Dictionary containing:
-                - original_args: list[str] - original parsed dbt args
-                - project_dir: str - directory containing dbt_project.yaml
-                - project_name: str | None - name from dbt_project.yaml
-                - target_dir: str | None - dbt target directory (--target-dir or default)
-                - cwd: str - current working directory
+            context: DbtContext object containing:
+                - original_args: Original parsed dbt args
+                - project_dir: Directory with dbt_project.yaml
+                - project_name: Project name from dbt_project.yaml (or None)
+                - target_dir: dbt target directory
+                - cwd: Current working directory
 
         Returns:
             Modified command_args (list[str]) to use instead of original args,
@@ -41,7 +60,7 @@ class XbtHookSpecs:
         self,
         result: subprocess.CompletedProcess,
         artifacts: dict,
-        context: dict,
+        context: DbtContext,
     ) -> None:
         """
         Hook called after dbt has executed.
@@ -57,7 +76,7 @@ class XbtHookSpecs:
                 Each value is a dict with:
                 - path: str | None - file path to artifact
                 - content: dict | None - parsed JSON content (None if parse failed or file missing)
-            context: Same dict as in before_dbt.
+            context: DbtContext object with same fields as in before_dbt.
 
         No return value expected.
 

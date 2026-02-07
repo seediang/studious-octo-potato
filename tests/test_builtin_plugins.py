@@ -2,9 +2,11 @@
 
 from unittest.mock import Mock, patch
 
+from xbt.hooks import DbtContext
 from xbt.plugin_manager import (
     create_plugin_manager,
     get_loaded_plugins,
+    get_loaded_plugins_with_versions,
     load_builtin_plugins,
     load_config,
 )
@@ -26,13 +28,13 @@ class TestBuiltinPluginsAutoLoaded:
         """Test that built-in plugin receives context in before_dbt hook."""
         manager = create_plugin_manager()
 
-        context = {
-            "original_args": ["run"],
-            "project_dir": "/project",
-            "project_name": "test_project",
-            "target_dir": "/project/target",
-            "cwd": "/project",
-        }
+        context = DbtContext(
+            original_args=["run"],
+            project_dir="/project",
+            project_name="test_project",
+            target_dir="/project/target",
+            cwd="/project",
+        )
 
         # Call the hook
         results = manager.hook.before_dbt(command_args=["run"], context=context)
@@ -56,13 +58,13 @@ class TestBuiltinPluginsAutoLoaded:
             },
         }
 
-        context = {
-            "original_args": ["run"],
-            "project_dir": "/project",
-            "project_name": "test_project",
-            "target_dir": "/project/target",
-            "cwd": "/project",
-        }
+        context = DbtContext(
+            original_args=["run"],
+            project_dir="/project",
+            project_name="test_project",
+            target_dir="/project/target",
+            cwd="/project",
+        )
 
         # Call the hook - should not raise
         manager.hook.after_dbt(result=result, artifacts=artifacts, context=context)
@@ -95,6 +97,37 @@ class TestGetLoadedPlugins:
         plugins = get_loaded_plugins(manager)
 
         # example_builtin should not be in the list
+        assert "example_builtin" not in plugins
+
+
+class TestGetLoadedPluginsWithVersions:
+    """Tests for get_loaded_plugins_with_versions function."""
+
+    def test_get_loaded_plugins_with_versions(self):
+        """Test that get_loaded_plugins_with_versions returns dict with versions."""
+        manager = create_plugin_manager()
+        plugins = get_loaded_plugins_with_versions(manager)
+
+        # Should have at least the example_builtin plugin
+        assert isinstance(plugins, dict)
+        assert "example_builtin" in plugins
+        assert plugins["example_builtin"] == "0.1.0"
+
+    def test_get_loaded_plugins_with_versions_sorted(self):
+        """Test that plugin names are sorted alphabetically."""
+        manager = create_plugin_manager()
+        plugins = get_loaded_plugins_with_versions(manager)
+
+        # Check that keys are sorted
+        assert list(plugins.keys()) == sorted(plugins.keys())
+
+    def test_get_loaded_plugins_with_versions_disabled_plugins(self):
+        """Test get_loaded_plugins_with_versions when plugins are disabled."""
+        config = {"disabled_plugins": ["example_builtin"]}
+        manager = create_plugin_manager(config)
+        plugins = get_loaded_plugins_with_versions(manager)
+
+        # example_builtin should not be in the dict
         assert "example_builtin" not in plugins
 
 
@@ -156,13 +189,13 @@ class TestPluginHookExecution:
         manager = create_plugin_manager()
 
         # Should be callable without errors
-        context = {
-            "original_args": ["run"],
-            "project_dir": ".",
-            "project_name": None,
-            "target_dir": "./target",
-            "cwd": ".",
-        }
+        context = DbtContext(
+            original_args=["run"],
+            project_dir=".",
+            project_name=None,
+            target_dir="./target",
+            cwd=".",
+        )
 
         result = manager.hook.before_dbt(command_args=["run"], context=context)
         assert isinstance(result, list)
@@ -176,13 +209,13 @@ class TestPluginHookExecution:
 
         artifacts = {}
 
-        context = {
-            "original_args": ["run"],
-            "project_dir": ".",
-            "project_name": None,
-            "target_dir": "./target",
-            "cwd": ".",
-        }
+        context = DbtContext(
+            original_args=["run"],
+            project_dir=".",
+            project_name=None,
+            target_dir="./target",
+            cwd=".",
+        )
 
         # Should not raise
         manager.hook.after_dbt(result=result, artifacts=artifacts, context=context)
@@ -197,13 +230,13 @@ class TestDefaultPluginBehavior:
 
         # Should have loaded at least the example_builtin plugin
         # We can't directly check what plugins are registered, but we can call the hooks
-        context = {
-            "original_args": [],
-            "project_dir": ".",
-            "project_name": None,
-            "target_dir": "./target",
-            "cwd": ".",
-        }
+        context = DbtContext(
+            original_args=[],
+            project_dir=".",
+            project_name=None,
+            target_dir="./target",
+            cwd=".",
+        )
 
         # Call hooks - should work without errors
         manager.hook.before_dbt(command_args=[], context=context)

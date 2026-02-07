@@ -297,3 +297,35 @@ def get_loaded_plugins(manager: pluggy.PluginManager) -> list[str]:
             plugin_names.append(plugin_name)
 
     return sorted(plugin_names)
+
+
+def get_loaded_plugins_with_versions(
+    manager: pluggy.PluginManager,
+) -> dict[str, str]:
+    """
+    Get a dictionary of loaded plugin names with their versions.
+
+    Args:
+        manager: The pluggy.PluginManager instance.
+
+    Returns:
+        Dictionary mapping plugin names to versions.
+        If a plugin doesn't have a version, "unknown" is used.
+        Example: {"example_builtin": "0.1.2", "my_plugin": "1.0.0"}
+    """
+    plugins_with_versions = {}
+
+    for plugin in manager.get_plugins():
+        # Try to get the plugin name from __plugin_name__ attribute
+        plugin_name = getattr(plugin, "__plugin_name__", None)
+        if not plugin_name:
+            # Fallback to module name
+            plugin_name = getattr(plugin, "__name__", str(plugin))
+
+        if plugin_name:
+            # Try to get version from __plugin_version__ attribute
+            version = getattr(plugin, "__plugin_version__", "unknown")
+            plugins_with_versions[plugin_name] = version
+
+    # Return sorted by name
+    return dict(sorted(plugins_with_versions.items()))

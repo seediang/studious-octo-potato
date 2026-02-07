@@ -10,10 +10,11 @@ from typing import Optional
 import yaml
 
 from . import __version__
+from .hooks import DbtContext
 from .plugin_manager import (
     collect_artifacts,
     create_plugin_manager,
-    get_loaded_plugins,
+    get_loaded_plugins_with_versions,
     load_config,
 )
 
@@ -37,12 +38,12 @@ def main() -> None:
         try:
             config = load_config()
             plugin_manager = create_plugin_manager(config)
-            plugins = get_loaded_plugins(plugin_manager)
+            plugins_with_versions = get_loaded_plugins_with_versions(plugin_manager)
 
-            if plugins:
+            if plugins_with_versions:
                 print("xbt-plugins:")
-                for plugin_name in plugins:
-                    print(f"  - {plugin_name}")
+                for plugin_name, version in plugins_with_versions.items():
+                    print(f"  - {plugin_name}: {version}")
             else:
                 print("xbt-plugins: none")
 
@@ -62,13 +63,13 @@ def main() -> None:
     project_name = load_dbt_project_name(project_dir)
 
     # Build context for plugins
-    context = {
-        "original_args": argv.copy() if argv else [],
-        "project_dir": project_dir,
-        "project_name": project_name,
-        "target_dir": get_target_dir(argv, project_dir),
-        "cwd": str(Path.cwd()),
-    }
+    context = DbtContext(
+        original_args=argv.copy() if argv else [],
+        project_dir=project_dir,
+        project_name=project_name,
+        target_dir=get_target_dir(argv, project_dir),
+        cwd=str(Path.cwd()),
+    )
 
     # Create and setup plugin manager
     plugin_manager = create_plugin_manager(config)
@@ -95,7 +96,7 @@ def main() -> None:
     result = run_dbt(dbt_args)
 
     # Collect artifacts
-    artifacts = collect_artifacts(context["target_dir"], project_dir)
+    artifacts = collect_artifacts(context.target_dir, project_dir)
 
     # Call after_dbt hooks
     plugin_manager.hook.after_dbt(result=result, artifacts=artifacts, context=context)
