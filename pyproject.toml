@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/xbt"]
+
+[project]
+name = "xbt"
+version = "0.1.0"
+description = "A CLI tool built with UV, RUFF, and ty"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    {name = "Simon", email = "simon@example.com"}
+]
+dependencies = []
+
+[project.scripts]
+xbt = "xbt.main:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.4.0",
+    "ty>=0.0.15",
+    "pytest>=8.0.0",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+exclude = [
+    ".venv",
+    "__pycache__",
+    ".git",
+    "build",
+    "dist",
+    ".eggs",
+]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B", "I"]
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+]
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["xbt"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
